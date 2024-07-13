@@ -19,7 +19,8 @@ sed -i 's/luci-theme-bootstrap/luci-theme-argon/g' feeds/luci/collections/luci/M
 # 替换默认主机名
 sed -i 's/OpenWrt/Redmi_AX5/g' package/base-files/files/bin/config_generate
 # 使用新Argon
-rm -rf package/lean/luci-theme-argon
-git clone -b 18.06 https://github.com/jerrykuku/luci-theme-argon.git package/lean/luci-theme-argon
+rm -rf feeds/luci/luci-theme-argon
+rm -rf feeds/luci/luci-theme-argon-mod
+git clone -b 18.06 https://github.com/jerrykuku/luci-theme-argon.git feeds/luci/luci-theme-argon
 rm -rf package/lean/luci-app-argon-config # if have
 git clone -b 18.06 https://github.com/jerrykuku/luci-app-argon-config.git package/lean/luci-app-argon-config
