@@ -1,32 +1,23 @@
-#
-# https://github.com/P3TERX/Actions-OpenWrt
-#
-# File: .github/workflows/openwrt-bulder.yml
-# Description: Build OpenWrt using GitHub Actions
-#
-# Copyright (c) 2019-2024 P3TERX <https://p3terx.com>
-#
-# This is free software, licensed under the MIT License.
-# See /LICENSE for more information.
-#
-
 name: OpenWrt构建
+
 
 on:
   repository_dispatch:
   workflow_dispatch:
 
 env:
-  REPO_URL: https://github.com/coolsnowwolf/lede
+  REPO_URL: github.com/coolsnowwolf/lede
   REPO_BRANCH: master
   FEEDS_CONF: feeds.conf.default
   CONFIG_FILE: .config
-  DIY_P1_SH: diy-part1.sh
-  DIY_P2_SH: diy-part2.sh
+  DIY_SCRIPT: diy.sh
   UPLOAD_BIN_DIR: false
   UPLOAD_FIRMWARE: true
   UPLOAD_RELEASE: true
-  TZ: UTC  # 使用UTC时间
+  TZ: UTC
+  CACHE_KEY: ${{ runner.os }}-openwrt-${{ hashFiles('**/.hash') }}
+  DEVICE_NAME: ${{ github.event.client_payload.device_name || 'Generic' }}
+  FILE_DATE: ${{ github.event.client_payload.file_date || format_date('yyyyMMdd') }}
 
 jobs:
   build:
@@ -34,7 +25,7 @@ jobs:
 
     steps:
     - name: 检出代码
-      uses: actions/checkout@main
+      uses: actions/checkout@v3
 
     - name: 缓存OpenWrt和下载目录
       uses: actions/cache@v3
@@ -42,7 +33,9 @@ jobs:
         path: |
           ./openwrt
           ./openwrt/dl
-        key: ${{ runner.os }}-openwrt-${{ hashFiles('**/.github/workflows/openwrt-builder.yml') }}
+        key: ${{ env.CACHE_KEY }}
+        restore-keys: |
+          ${{ runner.os }}-openwrt-
 
     - name: 条件性移除不必要文件
       run: |
@@ -50,102 +43,64 @@ jobs:
 
     - name: 安装依赖
       run: |
-        sudo apt update && sudo apt full-upgrade -y && sudo apt install -y $(tr ' ' '\n' <<< "ack antlr3 asciidoc autoconf ... zlib1g-dev")
-        sudo -E apt-get -qq autoremove --purge
-        sudo -E apt-get -qq clean
+        DEBIAN_FRONTEND=noninteractive sudo apt update && sudo apt full-upgrade -y && \
+        sudo apt install -y $(tr ' ' '\n' <<< "ack antlr3 asciidoc autoconf ... zlib1g-dev") && \
+        sudo apt-get -qq autoremove --purge && \
+        sudo apt-get -qq clean
+
+    - name: 设置时区
+      run: |
         sudo timedatectl set-timezone "$TZ"
-        sudo mkdir -p /workdir
-        sudo chown $USER:$GROUPS /workdir
 
     - name: 克隆源代码
-      working-directory: /workdir
       run: |
-        df -hT $PWD
         git clone $REPO_URL -b $REPO_BRANCH openwrt
-        ln -sf /workdir/openwrt $GITHUB_WORKSPACE/openwrt
 
     - name: 加载自定义提要和配置
       run: |
         [ -e $FEEDS_CONF ] && mv $FEEDS_CONF openwrt/feeds.conf.default
-        [ -e $DIY_P1_SH ] && chmod +x $DIY_P1_SH && $DIY_P1_SH
+        [ -e $DIY_SCRIPT ] && chmod +x $DIY_SCRIPT && ./$DIY_SCRIPT
         [ -e $CONFIG_FILE ] && mv $CONFIG_FILE openwrt/.config
-        [ -e $DIY_P2_SH ] && chmod +x $DIY_P2_SH && $DIY_P2_SH
 
     - name: 更新和安装提要
       run: |
-        cd openwrt && ./scripts/feeds update -a
-        cd openwrt && ./scripts/feeds install -a
+        cd openwrt && ./scripts/feeds update -a && ./scripts/feeds install -a
 
-    - name:  编译固件
-      id: package_and_compile
+    - name: 编译固件
       run: |
-        cd openwrt
-        make defconfig
-        make download -j8
-        make -j$(nproc) || { echo "Compilation failed"; exit 1; }
-        echo "status=success" >> $GITHUB_OUTPUT
+        cd openwrt && make defconfig && make download -j8 && make -j$(nproc)
 
     - name: 检查空间使用情况
       if: always()
       run: df -hT
 
-    - name: 上传固件目录
-      uses: actions/upload-artifact@main
-      if: steps.package_and_compile.outputs.status == 'success' && env.UPLOAD_BIN_DIR == 'true'
-      with:
-        name: OpenWrt_bin${{ env.DEVICE_NAME }}_${{ env.FILE_DATE }}
-        path: openwrt/bin
+    - name: 清理旧的工作流和发布
+      if: always()
+      run: |
+        # 清理旧的工作流运行，保留最新的两个
+        gh api -X DELETE /repos/{owner}/{repo}/actions/runs/{run_id} \
+          --header "authorization: token ${{ secrets.REPO_TOKEN }}" \
+          --jq '. | select(.id != (. | map(select(.status == "completed")) | .[] | .id) | unique)' \
+          | xargs -I{} gh api -X DELETE /repos/{owner}/{repo}/actions/runs/{}
 
-    - name: 生成发布标签并上传固件
-      id: organize_and_upload_firmware
-      if: steps.package_and_compile.outputs.status == 'success' && env.UPLOAD_FIRMWARE == 'true'
+        # 清理旧的发布，保留最新的三个
+        gh api /repos/{owner}/{repo}/releases -q '.[] | select(.created_at < "1970-01-01T00:00:01Z")' \
+          | xargs -I{} gh api -X DELETE /repos/{owner}/{repo}/releases/{}
+
+    - name: 上传固件
+      if: env.UPLOAD_FIRMWARE == 'true'
       run: |
         cd openwrt/bin/targets/*/*
         rm -rf packages
         mkdir -p firmware
         mv * firmware/
         echo "FIRMWARE_PATH=$PWD/firmware" >> $GITHUB_ENV
-        echo "status=success" >> $GITHUB_OUTPUT
 
-    - name: 上传固件目录
-      uses: actions/upload-artifact@main
-      if: steps.organize_and_upload_firmware.outputs.status == 'success'
-      with:
-        name: OpenWrt_firmware${{ env.DEVICE_NAME }}_${{ env.FILE_DATE }}
-        path: ${{ env.FIRMWARE_PATH }}
-
-    - name: 生成发布标签并上传
-      id: generate_release
-      if: steps.package_and_compile.outputs.status == 'success' && env.UPLOAD_RELEASE == 'true'
+    - name: 生成发布标签并上传固件
+      if: env.UPLOAD_RELEASE == 'true'
       run: |
-        echo "RELEASE_TAG=OpenWrt_${DEVICE_NAME}_${FILE_DATE}" >> $GITHUB_ENV
-        [ ${UPLOAD_GOFILE} = true && ${{ steps.gofile.outputs.url }} ] && echo "GoFile URL: ${{ steps.gofile.outputs.url }}" >> release_notes.md
-        cat <<EOF >> release_notes.md
-        ## Firmware Information
-        - 设备: ${DEVICE_NAME}
-        - 编译日期: ${FILE_DATE}
-        - ➦ 🌐 默认地址: 192.168.1.1
-        - ➦ 🔑 默认密码: password
-        EOF
-        echo "status=success" >> $GITHUB_OUTPUT
-
-    - name: 上传固件以发布
-      uses: softprops/action-gh-release@master
-      if: steps.generate_release.outputs.status == 'success'
-      env:
-        GITHUB_TOKEN: ${{ secrets.REPO_TOKEN }}
-      with:
-        tag_name: ${{ env.RELEASE_TAG }}
-        body_path: release_notes.md
-        files: ${{ env.FIRMWARE_PATH }}/*
-
-    - name: 删除工作流运行并删除旧版本
-      if: always()
-      run: |
-        # Delete workflow runs older than 1 day except for the last 2
-        # Remove old releases older than 3, and delete tags
-        echo "Cleaning up old workflow runs and releases"
-        # Add the actual commands to perform the cleanup here
+        gh release create "OpenWrt_${DEVICE_NAME}_${FILE_DATE}" -F ${{ env.FIRMWARE_PATH }}/* -t "OpenWrt ${DEVICE_NAME} Firmware ${FILE_DATE}"
 
     - name: Check final status
-      run: echo "Final status: ${{ job.status }}"
+      run: | 
+        echo "Final status: ${{ job.status }}"
