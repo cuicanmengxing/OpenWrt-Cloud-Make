@@ -15,4 +15,5 @@
 
 [P3TERX/Actions-OpenWrt](https://github.com/P3TERX/Actions-OpenWrt)  
 [coolsnowwolf/lede](https://github.com/coolsnowwolf/lede)  
-[jerrykuku/luci-theme-argon](https://github.com/jerrykuku/luci-theme-argon)  
+[jerrykuku/luci-theme-argon](https://github.com/jerrykuku/luci-theme-argon)
+[pymumu/smartdns](https://github.com/pymumu/smartdns)
