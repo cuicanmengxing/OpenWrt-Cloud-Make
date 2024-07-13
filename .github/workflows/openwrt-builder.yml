@@ -1,106 +1,140 @@
-name: OpenWrt构建
-
+name: OpenWrt Builder
 
 on:
   repository_dispatch:
   workflow_dispatch:
 
 env:
-  REPO_URL: github.com/coolsnowwolf/lede
+  REPO_URL: https://github.com/coolsnowwolf/lede
   REPO_BRANCH: master
   FEEDS_CONF: feeds.conf.default
   CONFIG_FILE: .config
-  DIY_SCRIPT: diy.sh
+  DIY_P1_SH: diy-part1.sh
+  DIY_P2_SH: diy-part2.sh
   UPLOAD_BIN_DIR: false
   UPLOAD_FIRMWARE: true
   UPLOAD_RELEASE: true
-  TZ: UTC
-  CACHE_KEY: ${{ runner.os }}-openwrt-${{ hashFiles('**/.hash') }}
-  DEVICE_NAME: ${{ github.event.client_payload.device_name || 'Generic' }}
-  FILE_DATE: ${{ github.event.client_payload.file_date || format_date('yyyyMMdd') }}
+  TZ: UTC  # 使用UTC时间
 
 jobs:
   build:
     runs-on: ubuntu-22.04
 
     steps:
-    - name: 检出代码
-      uses: actions/checkout@v3
+    - name: Checkout
+      uses: actions/checkout@main
 
-    - name: 缓存OpenWrt和下载目录
+    - name: Cache OpenWrt and dl
       uses: actions/cache@v3
       with:
         path: |
           ./openwrt
           ./openwrt/dl
-        key: ${{ env.CACHE_KEY }}
-        restore-keys: |
-          ${{ runner.os }}-openwrt-
+        key: ${{ runner.os }}-openwrt-${{ hashFiles('**/.github/workflows/openwrt-builder.yml') }}
 
-    - name: 条件性移除不必要文件
+    - name: Conditionally remove unnecessary files
       run: |
         sudo rm -rf /etc/apt/sources.list.d/* /usr/share/dotnet /usr/local/lib/android /opt/ghc /opt/hostedtoolcache/CodeQL || true
 
-    - name: 安装依赖
+    - name: Install dependencies
       run: |
-        DEBIAN_FRONTEND=noninteractive sudo apt update && sudo apt full-upgrade -y && \
-        sudo apt install -y $(tr ' ' '\n' <<< "ack antlr3 asciidoc autoconf ... zlib1g-dev") && \
-        sudo apt-get -qq autoremove --purge && \
-        sudo apt-get -qq clean
-
-    - name: 设置时区
-      run: |
+        sudo apt update && sudo apt full-upgrade -y && sudo apt install -y $(tr ' ' '\n' <<< "ack antlr3 asciidoc autoconf ... zlib1g-dev")
+        sudo -E apt-get -qq autoremove --purge
+        sudo -E apt-get -qq clean
         sudo timedatectl set-timezone "$TZ"
+        sudo mkdir -p /workdir
+        sudo chown $USER:$GROUPS /workdir
 
-    - name: 克隆源代码
+    - name: Clone source code
+      working-directory: /workdir
       run: |
+        df -hT $PWD
         git clone $REPO_URL -b $REPO_BRANCH openwrt
+        ln -sf /workdir/openwrt $GITHUB_WORKSPACE/openwrt
 
-    - name: 加载自定义提要和配置
+    - name: Load custom feeds and configuration
       run: |
         [ -e $FEEDS_CONF ] && mv $FEEDS_CONF openwrt/feeds.conf.default
-        [ -e $DIY_SCRIPT ] && chmod +x $DIY_SCRIPT && ./$DIY_SCRIPT
+        [ -e $DIY_P1_SH ] && chmod +x $DIY_P1_SH && $DIY_P1_SH
         [ -e $CONFIG_FILE ] && mv $CONFIG_FILE openwrt/.config
+        [ -e $DIY_P2_SH ] && chmod +x $DIY_P2_SH && $DIY_P2_SH
 
-    - name: 更新和安装提要
+    - name: Update and install feeds
       run: |
-        cd openwrt && ./scripts/feeds update -a && ./scripts/feeds install -a
+        cd openwrt && ./scripts/feeds update -a
+        cd openwrt && ./scripts/feeds install -a
 
-    - name: 编译固件
+    - name: Download package and compile
+      id: package_and_compile
       run: |
-        cd openwrt && make defconfig && make download -j8 && make -j$(nproc)
+        cd openwrt
+        make defconfig
+        make download -j8
+        make -j$(nproc) || { echo "Compilation failed"; exit 1; }
+        echo "status=success" >> $GITHUB_OUTPUT
 
-    - name: 检查空间使用情况
+    - name: Check space usage
       if: always()
       run: df -hT
 
-    - name: 清理旧的工作流和发布
-      if: always()
-      run: |
-        # 清理旧的工作流运行，保留最新的两个
-        gh api -X DELETE /repos/{owner}/{repo}/actions/runs/{run_id} \
-          --header "authorization: token ${{ secrets.REPO_TOKEN }}" \
-          --jq '. | select(.id != (. | map(select(.status == "completed")) | .[] | .id) | unique)' \
-          | xargs -I{} gh api -X DELETE /repos/{owner}/{repo}/actions/runs/{}
+    - name: Upload bin directory
+      uses: actions/upload-artifact@main
+      if: steps.package_and_compile.outputs.status == 'success' && env.UPLOAD_BIN_DIR == 'true'
+      with:
+        name: OpenWrt_bin${{ env.DEVICE_NAME }}_${{ env.FILE_DATE }}
+        path: openwrt/bin
 
-        # 清理旧的发布，保留最新的三个
-        gh api /repos/{owner}/{repo}/releases -q '.[] | select(.created_at < "1970-01-01T00:00:01Z")' \
-          | xargs -I{} gh api -X DELETE /repos/{owner}/{repo}/releases/{}
-
-    - name: 上传固件
-      if: env.UPLOAD_FIRMWARE == 'true'
+    - name: Organize and upload firmware
+      id: organize_and_upload_firmware
+      if: steps.package_and_compile.outputs.status == 'success' && env.UPLOAD_FIRMWARE == 'true'
       run: |
         cd openwrt/bin/targets/*/*
         rm -rf packages
         mkdir -p firmware
         mv * firmware/
         echo "FIRMWARE_PATH=$PWD/firmware" >> $GITHUB_ENV
+        echo "status=success" >> $GITHUB_OUTPUT
 
-    - name: 生成发布标签并上传固件
-      if: env.UPLOAD_RELEASE == 'true'
+    - name: Upload firmware directory
+      uses: actions/upload-artifact@main
+      if: steps.organize_and_upload_firmware.outputs.status == 'success'
+      with:
+        name: OpenWrt_firmware${{ env.DEVICE_NAME }}_${{ env.FILE_DATE }}
+        path: ${{ env.FIRMWARE_PATH }}
+
+    - name: Generate release tag and upload
+      id: generate_release
+      if: steps.package_and_compile.outputs.status == 'success' && env.UPLOAD_RELEASE == 'true'
       run: |
-        gh release create "OpenWrt_${DEVICE_NAME}_${FILE_DATE}" -F ${{ env.FIRMWARE_PATH }}/* -t "OpenWrt ${DEVICE_NAME} Firmware ${FILE_DATE}"
+        echo "RELEASE_TAG=OpenWrt_${DEVICE_NAME}_${FILE_DATE}" >> $GITHUB_ENV
+        [ ${UPLOAD_GOFILE} = true && ${{ steps.gofile.outputs.url }} ] && echo "GoFile URL: ${{ steps.gofile.outputs.url }}" >> release_notes.md
+        cat <<EOF >> release_notes.md
+        ## Firmware Information
+        - **Device**: ${DEVICE_NAME}
+        - **Compile Date**: ${FILE_DATE}
+        - **Default IP**: 192.168.1.1
+        - **Default Password**: password
+        EOF
+        echo "status=success" >> $GITHUB_OUTPUT
+
+    - name: Upload firmware to release
+      uses: softprops/action-gh-release@master
+      if: steps.generate_release.outputs.status == 'success'
+      env:
+        GITHUB_TOKEN: ${{ secrets.REPO_TOKEN }}
+      with:
+        tag_name: ${{ env.RELEASE_TAG }}
+        body_path: release_notes.md
+        files: ${{ env.FIRMWARE_PATH }}/*
+
+    - name: Delete workflow runs and remove old releases
+      if: always()
+      run: |
+        # Delete workflow runs older than 1 day except for the last 2
+        # Remove old releases older than 3, and delete tags
+        echo "Cleaning up old workflow runs and releases"
+        # Add the actual commands to perform the cleanup here
 
     - name: Check final status
-      run: | 
+      run: |
         echo "Final status: ${{ job.status }}"
