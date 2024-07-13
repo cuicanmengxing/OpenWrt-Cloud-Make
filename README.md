@@ -13,7 +13,8 @@
 主机型号虽然写着Xiaomi RM1800 但是Redmi_AX5同样可以使用。
 ![image](https://github.com/user-attachments/assets/0e2e68fd-16af-497a-9284-1d3089587f7b)
 
-[P3TERX/Actions-OpenWrt](https://github.com/P3TERX/Actions-OpenWrt)  
-[coolsnowwolf/lede](https://github.com/coolsnowwolf/lede)  
-[jerrykuku/luci-theme-argon](https://github.com/jerrykuku/luci-theme-argon)
+编译脚本:[P3TERX/Actions-OpenWrt](https://github.com/P3TERX/Actions-OpenWrt)    
+OpenWrt源码:[coolsnowwolf/lede](https://github.com/coolsnowwolf/lede)    
+所用到的第三方软件包:  
+[jerrykuku/luci-theme-argon](https://github.com/jerrykuku/luci-theme-argon)  
 [pymumu/smartdns](https://github.com/pymumu/smartdns)
