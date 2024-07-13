@@ -8,7 +8,7 @@
 🌈多播增强：集成多播插件，提升多设备数据传输效率。  
 🪅视觉享受：搭载Argon主题([jerrykuku/luci-theme-argon](https://github.com/jerrykuku/luci-theme-argon))，带来清新的视觉体验。  
 #### 注意
-此固件无Wifi(正在尝试加入Wifi...)  
+此固件目前暂无Wifi支持  
 主机型号虽然写着Xiaomi RM1800 但是Redmi_AX5同样可以使用。
 ![image](https://github.com/user-attachments/assets/0e2e68fd-16af-497a-9284-1d3089587f7b)
 
