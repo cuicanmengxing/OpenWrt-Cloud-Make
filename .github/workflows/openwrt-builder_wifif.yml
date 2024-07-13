@@ -10,7 +10,7 @@
 # See /LICENSE for more information.
 #
 
-name: OpenWrt Builder(wifi)
+name: OpenWrt Builder(Wifi)
 
 on:
   repository_dispatch:
@@ -128,11 +128,16 @@ jobs:
       id: tag
       if: env.UPLOAD_RELEASE == 'true' && !cancelled()
       run: |
-        echo "release_tag=$(date +"%Y.%m.%d-%H%M")" >> $GITHUB_OUTPUT
-        touch release.txt
-        [ ${UPLOAD_GOFILE} = true && ${{ steps.gofile.outputs.url }} ] && echo "🔗 [GoFile](${{ steps.gofile.outputs.url }})" >> release.txt
-        echo "status=success" >> $GITHUB_OUTPUT
-
+            echo "release_tag=$(date +"%Y.%m.%d-%H%M")" >> $GITHUB_OUTPUT
+            echo -e "====================🧊固件信息🧊=======================\n" \
+                 "➦ 📒 固件名称：Redmi_AX5(测试含Wifi)\n" \
+                 "➦ 💻 固件平台：Redmi_AX5\n" \
+                 "➦ ⚽ 固件源码：coolsnowwolf/lede\n" \
+                 "➦ 💝 源码分支：master\n" \
+                 "➦ 🌐 默认地址：192.168.1.1\n" \
+                 "➦ 🔑 默认密码：password" > release.txt
+            echo "status=success" >> $GITHUB_OUTPU
+            
     - name: Upload firmware to release
       uses: softprops/action-gh-release@master
       if: steps.tag.outputs.status == 'success' && !cancelled()
