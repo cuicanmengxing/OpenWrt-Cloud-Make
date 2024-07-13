@@ -12,11 +12,13 @@
 
 # Modify default IP
 #sed -i 's/192.168.1.1/192.168.50.5/g' package/base-files/files/bin/config_generate
-# 替换主题
-rm -rf luci-theme-argon
-git clone -b 18.06 https://github.com/jerrykuku/luci-theme-argon.git luci-theme-argon
+
 # 替换默认主题
 sed -i 's/luci-theme-bootstrap/luci-theme-argon/g' feeds/luci/collections/luci/Makefile
 
 # 替换默认主机名
 sed -i 's/OpenWrt/Redmi_AX5/g' package/base-files/files/bin/config_generate
+# 使用新Argon
+cd lede/package/lean
+rm -rf luci-theme-argon
+git clone -b 18.06 https://github.com/jerrykuku/luci-theme-argon.git luci-theme-argon
