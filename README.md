@@ -1,3 +1,4 @@
+# 制造中
 ## Redmi AX5 OpenWrt固件
 ![image](https://github.com/user-attachments/assets/c15a89a6-9748-4a7a-b646-5d373263ddc1)
 
