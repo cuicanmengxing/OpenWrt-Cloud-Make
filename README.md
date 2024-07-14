@@ -9,6 +9,6 @@
 #### 注意
 此固件无Wifi支持  
 主机型号虽然写着Xiaomi RM1800 但是Redmi_AX5同样可以使用。
-安装: [Wiki](https://github.com/cuicanmengxing/Redmi_AX5_OpenWrt/wiki)
+##### 安装: [Wiki](https://github.com/cuicanmengxing/Redmi_AX5_OpenWrt/wiki)
 编译脚本:[P3TERX/Actions-OpenWrt](https://github.com/P3TERX/Actions-OpenWrt)    
 OpenWrt源码:[coolsnowwolf/lede](https://github.com/coolsnowwolf/lede)    
