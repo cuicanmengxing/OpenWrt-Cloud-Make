@@ -36,14 +36,6 @@ jobs:
     - name: Checkout
       uses: actions/checkout@main
 
-    - name: Cache OpenWrt and dl
-      uses: actions/cache@v3
-      with:
-        path: |
-          ./openwrt
-          ./openwrt/dl
-        key: ${{ runner.os }}-openwrt-${{ hashFiles('**/.github/workflows/openwrt-builder.yml') }}
-
     - name: Initialization environment
       env:
         DEBIAN_FRONTEND: noninteractive
@@ -137,15 +129,9 @@ jobs:
       id: tag
       if: env.UPLOAD_RELEASE == 'true' && !cancelled()
       run: |
-        echo "RELEASE_TAG=OpenWrt_${DEVICE_NAME}_${FILE_DATE}" >> $GITHUB_ENV
-        [ ${UPLOAD_GOFILE} = true && ${{ steps.gofile.outputs.url }} ] && echo "GoFile URL: ${{ steps.gofile.outputs.url }}" >> release_notes.md
-        cat <<EOF >> release_notes.md
-        ## Firmware Information
-        - **设备**: ${DEVICE_NAME}
-        - **编译日期**: ${FILE_DATE}
-        - **默认IP**: 192.168.1.1
-        - **默认密码**: password
-        EOF
+        echo "release_tag=$(date +"%Y.%m.%d-%H%M")" >> $GITHUB_OUTPUT
+        touch release.txt
+        [ ${UPLOAD_GOFILE} = true && ${{ steps.gofile.outputs.url }} ] && echo "🔗 [GoFile](${{ steps.gofile.outputs.url }})" >> release.txt
         echo "status=success" >> $GITHUB_OUTPUT
 
     - name: Upload firmware to release
@@ -168,7 +154,7 @@ jobs:
       uses: dev-drprasad/delete-older-releases@master
       if: env.UPLOAD_RELEASE == 'true' && !cancelled()
       with:
-        keep_latest: 2
+        keep_latest: 3
         delete_tags: true
       env:
         GITHUB_TOKEN: ${{ secrets.REPO_TOKEN }}
