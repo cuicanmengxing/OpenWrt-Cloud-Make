@@ -10,17 +10,25 @@
 # See /LICENSE for more information.
 #
 
+rm -rf ./package/custom_packages
+mkdir -p ./package/custom_packages
+
 # Modify default IP
-#sed -i 's/192.168.1.1/192.168.50.5/g' package/base-files/files/bin/config_generate
+# sed -i 's/192.168.1.1/10.10.0.253/g' package/base-files/files/bin/config_generate
 
-# 替换默认主题
-sed -i 's/luci-theme-bootstrap/luci-theme-argon/g' feeds/luci/collections/luci/Makefile
+# Modify default passwd
+# sed -i '/$1$V4UetPzk$CYXluq4wUazHjmCDBCqXF./ d' package/lean/default-settings/files/zzz-default-settings
 
-# 替换默认主机名
-sed -i 's/OpenWrt/Redmi_AX5/g' package/base-files/files/bin/config_generate
-# 使用新Argon
-rm -rf feeds/luci/luci-theme-argon
-rm -rf feeds/luci/luci-theme-argon-mod
-git clone -b 18.06 https://github.com/jerrykuku/luci-theme-argon.git feeds/luci/luci-theme-argon
-rm -rf package/lean/luci-app-argon-config # if have
-git clone -b 18.06 https://github.com/jerrykuku/luci-app-argon-config.git package/lean/luci-app-argon-config
+# Add Theme
+rm -rf ./feeds/luci/themes/luci-theme-argon
+rm -rf ./feeds/luci/themes/luci-theme-argon-mod
+git clone -b 18.06 https://github.com/jerrykuku/luci-theme-argon.git ./package/custom_packages/luci-theme-argon
+
+rm -rf ./feeds/luci/applications/luci-app-argon-config
+git clone -b 18.06 https://github.com/jerrykuku/luci-app-argon-config.git ./package/custom_packages/luci-app-argon-config
+
+# adguardhome
+# rm -rf ./package/lean/luci-app-adguardhome
+git clone https://github.com/rufengsuixing/luci-app-adguardhome.git ./package/custom_packages/luci-app-adguardhome
+
+
