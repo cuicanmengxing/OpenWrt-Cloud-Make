@@ -137,15 +137,11 @@ jobs:
       id: tag
       if: env.UPLOAD_RELEASE == 'true' && !cancelled()
       run: |
-        echo "RELEASE_TAG=OpenWrt_${DEVICE_NAME}_${FILE_DATE}" >> $GITHUB_ENV
-        [ ${UPLOAD_GOFILE} = true && ${{ steps.gofile.outputs.url }} ] && echo "GoFile URL: ${{ steps.gofile.outputs.url }}" >> release_notes.md
-        cat <<EOF >> release_notes.md
-        ## Firmware Information
-        - **设备**: ${DEVICE_NAME}
-        - **编译日期**: ${FILE_DATE}
-        - **默认IP**: 192.168.1.1
-        - **默认密码**: password
-        EOF
+        echo "release_tag=Redmi_AX5$(date +"%Y.%m.%d)" >> $GITHUB_OUTPUT
+        touch release.txt
+        [ ${UPLOAD_GOFILE} = true && ${{ steps.gofile.outputs.url }} ] && echo "🔗 [GoFile](${{ steps.gofile.outputs.url }})" >> release.txt
+        echo "🔑默认密码:password" >> release.txt
+        echo "⚙️默认管理IP:192.168.1.1" >> release.txt
         echo "status=success" >> $GITHUB_OUTPUT
 
     - name: Upload firmware to release
