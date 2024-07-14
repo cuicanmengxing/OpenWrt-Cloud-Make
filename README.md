@@ -1,5 +1,4 @@
 ## Redmi AX5 OpenWrt固件
-![image](https://github.com/user-attachments/assets/c15a89a6-9748-4a7a-b646-5d373263ddc1)
 
 #### 固件亮点：  
 ⚒️稳定：使用lede源码编译([coolsnowwolf/lede](https://github.com/coolsnowwolf/lede))  
@@ -10,7 +9,6 @@
 #### 注意
 此固件无Wifi支持  
 主机型号虽然写着Xiaomi RM1800 但是Redmi_AX5同样可以使用。
-![image](https://github.com/user-attachments/assets/0e2e68fd-16af-497a-9284-1d3089587f7b)
 
 编译脚本:[P3TERX/Actions-OpenWrt](https://github.com/P3TERX/Actions-OpenWrt)    
 OpenWrt源码:[coolsnowwolf/lede](https://github.com/coolsnowwolf/lede)    
