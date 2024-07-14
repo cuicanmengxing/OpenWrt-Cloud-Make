@@ -19,6 +19,9 @@ mkdir -p ./package/custom_packages
 # Modify default passwd
 # sed -i '/$1$V4UetPzk$CYXluq4wUazHjmCDBCqXF./ d' package/lean/default-settings/files/zzz-default-settings
 
+# Modify hostname
+sed -i 's/OpenWrt/Redmi_AX5/g' package/base-files/files/bin/config_generate
+
 # Add Theme
 rm -rf ./feeds/luci/themes/luci-theme-argon
 rm -rf ./feeds/luci/themes/luci-theme-argon-mod
