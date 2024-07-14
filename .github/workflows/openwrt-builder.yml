@@ -117,10 +117,10 @@ jobs:
         [ ${UPLOAD_GOFILE} = true && ${{ steps.gofile.outputs.url }} ] && echo "GoFile URL: ${{ steps.gofile.outputs.url }}" >> release_notes.md
         cat <<EOF >> release_notes.md
         ## Firmware Information
-        - **Device**: ${DEVICE_NAME}
-        - **Compile Date**: ${FILE_DATE}
-        - **Default IP**: 192.168.1.1
-        - **Default Password**: password
+        - **设备**: ${DEVICE_NAME}
+        - **编译日期**: ${FILE_DATE}
+        - **默认IP**: 192.168.1.1
+        - **默认密码**: password
         EOF
         echo "status=success" >> $GITHUB_OUTPUT
 
