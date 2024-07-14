@@ -12,6 +12,3 @@
 
 编译脚本:[P3TERX/Actions-OpenWrt](https://github.com/P3TERX/Actions-OpenWrt)    
 OpenWrt源码:[coolsnowwolf/lede](https://github.com/coolsnowwolf/lede)    
-所用到的第三方软件包:  
-[jerrykuku/luci-theme-argon](https://github.com/jerrykuku/luci-theme-argon)  
-[pymumu/smartdns](https://github.com/pymumu/smartdns)
