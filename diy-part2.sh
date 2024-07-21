@@ -30,6 +30,9 @@ git clone -b 18.06 https://github.com/jerrykuku/luci-theme-argon.git ./package/c
 rm -rf ./feeds/luci/applications/luci-app-argon-config
 git clone -b 18.06 https://github.com/jerrykuku/luci-app-argon-config.git ./package/custom_packages/luci-app-argon-config
 
+#修改连接数
+sed -i 's/16384/65535/g' package/kernel/linux/files/sysctl-nf-conntrack.conf
+
 # adguardhome
 # rm -rf ./package/lean/luci-app-adguardhome
 git clone https://github.com/rufengsuixing/luci-app-adguardhome.git ./package/custom_packages/luci-app-adguardhome
