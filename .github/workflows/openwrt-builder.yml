@@ -50,6 +50,15 @@ jobs:
         sudo mkdir -p /workdir
         sudo chown $USER:$GROUPS /workdir
 
+    - name: Cache OpenWrt dl directory
+      uses: actions/cache@v2
+      id: cache-openwrt-dl
+      with:
+        path: openwrt/dl
+        key: openwrt-dl-${{ hashFiles('**/.config') }}-${{ env.REPO_BRANCH }}
+        restore-keys: |
+          openwrt-dl-${{ env.REPO_BRANCH }}
+          
     - name: Clone source code
       working-directory: /workdir
       run: |
@@ -145,18 +154,3 @@ jobs:
         tag_name: ${{ steps.tag.outputs.release_tag }}
         body_path: release.txt
         files: ${{ env.FIRMWARE }}/*
-
-    - name: Delete workflow runs
-      uses: Mattraks/delete-workflow-runs@main
-      with:
-        retain_days: 0
-        keep_minimum_runs: 2
-
-    - name: Remove old Releases
-      uses: dev-drprasad/delete-older-releases@master
-      if: env.UPLOAD_RELEASE == 'true' && !cancelled()
-      with:
-        keep_latest: 3
-        delete_tags: true
-      env:
-        GITHUB_TOKEN: ${{ secrets.REPO_TOKEN }}
