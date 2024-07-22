@@ -6,8 +6,6 @@
 🚀网络优化：启用NSS,BBR(需要手动在turboacc中启用BBR)。  
 🪅视觉享受：搭载Argon主题([jerrykuku/luci-theme-argon](https://github.com/jerrykuku/luci-theme-argon))，带来清新的视觉体验。  
 
-#### 安装: [Wiki](https://github.com/cuicanmengxing/Redmi_AX5_OpenWrt/wiki)  
-
 #### 注意
 此固件无Wifi支持  
 主机型号虽然写着Xiaomi RM1800 但是Redmi_AX5同样可以使用。
