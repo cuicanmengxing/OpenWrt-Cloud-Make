@@ -1,5 +1,5 @@
 # Modify hostname
-sed -i 's/OpenWrt/Redmi_AX5/g' package/base-files/files/bin/config_generate
+sed -i 's/OpenWrt/AX1800_Pro/g' package/base-files/files/bin/config_generate
 
 # Add Theme
 rm -rf ./feeds/luci/themes/luci-theme-argon
